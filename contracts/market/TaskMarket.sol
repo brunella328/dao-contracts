@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../tokens/WorkToken.sol";
 import "../identity/DIDRegistry.sol";
+import "../identity/GenesisLobster.sol";
 
 /**
  * @title TaskMarket
@@ -20,6 +21,7 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
 
     WorkToken public immutable workToken;
     DIDRegistry public immutable didRegistry;
+    GenesisLobster public genesisLobster; // mutable: set after NFT deploy
 
     enum TaskStatus { Pending, Active, Submitted, Verified, Disputed, Settled, Cancelled }
 
@@ -41,6 +43,7 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
     uint256 public constant TREASURY_BPS = 2000;     // 20% to treasury
     uint256 public constant GOV_SHARE_BPS = 1000;    // 10% to GOV holders
     uint256 public constant CONTRIBUTOR_BPS = 7000;  // 70% to contributor
+    uint256 public constant CONTRIBUTOR_DISCOUNT_BPS = 7350; // 73.5% for Genesis Lobster holders
 
     address public treasury;
 
@@ -59,6 +62,10 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(PAUSER_ROLE, admin);
         _grantRole(REVIEWER_ROLE, admin);
+    }
+
+    function setGenesisLobster(address genesisLobster_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        genesisLobster = GenesisLobster(genesisLobster_);
     }
 
     function postTask(uint256 reward, uint256 deadline, string calldata descHash)
@@ -163,11 +170,24 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
     function _distributeReward(uint256 taskId) internal {
         Task storage task = tasks[taskId];
         uint256 total = task.reward;
-        uint256 toTreasury = (total * TREASURY_BPS) / 10000;
-        uint256 toContributor = (total * CONTRIBUTOR_BPS) / 10000;
+
+        bool hasDiscount = address(genesisLobster) != address(0) &&
+            genesisLobster.hasDiscount(task.assignee);
+
+        uint256 contributorBps = hasDiscount ? CONTRIBUTOR_DISCOUNT_BPS : CONTRIBUTOR_BPS;
+        uint256 toContributor = (total * contributorBps) / 10000;
+        uint256 toTreasury = total - toContributor; // Treasury absorbs discount delta
 
         workToken.transfer(treasury, toTreasury);
         workToken.transfer(task.assignee, toContributor);
+
+        // Mint Genesis Lobster NFT if eligible
+        if (address(genesisLobster) != address(0) &&
+            genesisLobster.totalMinted() < genesisLobster.MAX_SUPPLY() &&
+            !hasDiscount)
+        {
+            try genesisLobster.safeMint(task.assignee, taskId) {} catch {}
+        }
 
         emit TaskVerified(taskId, task.assignee, toContributor);
     }
