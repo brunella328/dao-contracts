@@ -1,0 +1,75 @@
+type Task @entity {
+  id: ID!                   # taskId as string
+  client: Bytes!
+  assignee: Bytes
+  reward: BigInt!
+  status: String!           # Pending/Active/Submitted/Verified/Disputed/Settled/Cancelled
+  postedAt: BigInt!
+  deadline: BigInt!
+  descriptionHash: String!
+  resultHash: String
+  verifiedAt: BigInt
+  payoutAmount: BigInt
+}
+
+type DIDRecord @entity {
+  id: ID!                   # agent address
+  stakedAmount: BigInt!
+  creditScore: BigInt!
+  registeredAt: BigInt!
+  active: Boolean!
+  tasksCompleted: Int!
+  tasksAudited: Int!
+}
+
+type AuditSession @entity {
+  id: ID!                   # taskId
+  auditors: [Bytes!]!
+  passVotes: Int!
+  failVotes: Int!
+  finalized: Boolean!
+  createdAt: BigInt!
+  result: Boolean
+}
+
+type AuditVote @entity {
+  id: ID!                   # taskId-auditorAddress
+  taskId: BigInt!
+  auditor: Bytes!
+  pass: Boolean!
+  timestamp: BigInt!
+}
+
+type Challenge @entity {
+  id: ID!                   # challengeId
+  taskId: BigInt!
+  challenger: Bytes!
+  challengerStake: BigInt!
+  openedAt: BigInt!
+  resolved: Boolean!
+  challengerWon: Boolean
+  arbitrator: Bytes
+}
+
+type LobsterMint @entity {
+  id: ID!                   # tokenId
+  agent: Bytes!
+  taskId: BigInt!
+  serial: BigInt!
+  mintedAt: BigInt!
+}
+
+type BridgeStats @entity {
+  id: ID!                   # "global"
+  totalDeposited: BigInt!
+  totalRedeemed: BigInt!
+  bridgeMinted: BigInt!
+}
+
+type DailyStats @entity {
+  id: ID!                   # date string YYYY-MM-DD
+  tasksPosted: Int!
+  tasksVerified: Int!
+  totalRewardDistributed: BigInt!
+  newDIDs: Int!
+}
