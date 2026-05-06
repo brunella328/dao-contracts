@@ -86,7 +86,7 @@ describe("DAO Full Integration", function () {
       // Client posts task
       await workToken.connect(client).approve(await taskMarket.getAddress(), TASK_REWARD);
       const deadline = (await time.latest()) + 7 * 24 * 3600;
-      const tx = await taskMarket.connect(client).postTask(TASK_REWARD, deadline, "ipfs://QmTask123");
+      const tx = await taskMarket.connect(client).postTask(TASK_REWARD, deadline, "ipfs://QmTask123", 0);
       const receipt = await tx.wait();
       const taskId = 1n;
 

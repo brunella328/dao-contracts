@@ -14,8 +14,9 @@ import "./VotingPoints.sol";
  * @notice Quadratic Voting Governor. Extends OZ Governor with:
  *         - DID-gated voting (each DID gets equal initial points per epoch)
  *         - N² point cost per N votes cast
- *         - GOV token threshold for proposals
- *         - TimelockController for 72h execution delay
+ *         - Genesis Phase: fixed 10,000 GOV proposal threshold
+ *         - Growth Phase: dynamic threshold = max(10,000, totalSupply × 0.01%)
+ *         - TimelockController for 7-day execution delay
  */
 contract QVGovernor is
     Governor,
@@ -26,6 +27,10 @@ contract QVGovernor is
 {
     DIDRegistry public immutable didRegistry;
     VotingPoints public immutable votingPoints;
+
+    bool public growthPhaseActive;
+
+    event GrowthPhaseActivated(uint256 timestamp);
 
     constructor(
         IVotes govToken,
@@ -43,6 +48,14 @@ contract QVGovernor is
     {
         didRegistry = didRegistry_;
         votingPoints = votingPoints_;
+    }
+
+    // Activate Growth Phase dynamic threshold — only callable by Timelock (governance executor)
+    function activateGrowthPhase() external {
+        require(msg.sender == _executor(), "Not governance");
+        require(!growthPhaseActive, "Already active");
+        growthPhaseActive = true;
+        emit GrowthPhaseActivated(block.timestamp);
     }
 
     function quorum(uint256) public pure override returns (uint256) {
@@ -66,7 +79,11 @@ contract QVGovernor is
     }
 
     function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256) {
-        return super.proposalThreshold();
+        if (!growthPhaseActive) return 10_000e18;
+        uint256 base = 10_000e18;
+        // dynamic = 0.01% of circulating GOV supply
+        uint256 dynamic = token.getPastTotalSupply(block.number - 1) / 10_000;
+        return dynamic > base ? dynamic : base;
     }
 
     function state(uint256 proposalId)

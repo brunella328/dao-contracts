@@ -68,7 +68,7 @@ describe("M2 — WorkBridge + GenesisLobster + CliffVesting", function () {
     await didRegistry.connect(agent).registerDID(STAKE);
 
     await workToken.connect(user1).approve(await taskMarket.getAddress(), REWARD);
-    await taskMarket.connect(user1).postTask(REWARD, (await time.latest()) + 86400, "QmHash");
+    await taskMarket.connect(user1).postTask(REWARD, (await time.latest()) + 86400, "QmHash", 0);
     const taskId = await taskMarket.taskCount();
 
     await taskMarket.connect(agent).acceptTask(taskId);
@@ -160,7 +160,7 @@ describe("M2 — WorkBridge + GenesisLobster + CliffVesting", function () {
       await runFullTask(agent1);
       await workToken.mint(user1.address, REWARD);
       await workToken.connect(user1).approve(await taskMarket.getAddress(), REWARD);
-      await taskMarket.connect(user1).postTask(REWARD, (await time.latest()) + 86400, "Qm2");
+      await taskMarket.connect(user1).postTask(REWARD, (await time.latest()) + 86400, "Qm2", 0);
       const taskId2 = await taskMarket.taskCount();
       await taskMarket.connect(agent1).acceptTask(taskId2);
       await taskMarket.connect(agent1).submitResult(taskId2, "QmResult2");
@@ -174,7 +174,7 @@ describe("M2 — WorkBridge + GenesisLobster + CliffVesting", function () {
       // Second task for agent1 (now has NFT = discount)
       await workToken.mint(user1.address, REWARD);
       await workToken.connect(user1).approve(await taskMarket.getAddress(), REWARD);
-      await taskMarket.connect(user1).postTask(REWARD, (await time.latest()) + 86400, "Qm3");
+      await taskMarket.connect(user1).postTask(REWARD, (await time.latest()) + 86400, "Qm3", 0);
       const taskId = await taskMarket.taskCount();
       await taskMarket.connect(agent1).acceptTask(taskId);
       await taskMarket.connect(agent1).submitResult(taskId, "QmResult3");

@@ -24,6 +24,7 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
     GenesisLobster public genesisLobster; // mutable: set after NFT deploy
 
     enum TaskStatus { Pending, Active, Submitted, Verified, Disputed, Settled, Cancelled }
+    enum TaskType { Code, Design, Research, Community }
 
     struct Task {
         address client;
@@ -32,11 +33,13 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
         uint256 postedAt;
         uint256 deadline;
         TaskStatus status;
+        TaskType taskType;
         string descriptionHash;
         string resultHash;
     }
 
     uint256 public taskCount;
+    uint256 public verifiedTaskCount;
     mapping(uint256 => Task) public tasks;
 
     uint256 public constant AUDIT_FEE_BPS = 500;    // 5% to audit agents
@@ -47,7 +50,7 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
 
     address public treasury;
 
-    event TaskPosted(uint256 indexed taskId, address indexed client, uint256 reward, string descHash);
+    event TaskPosted(uint256 indexed taskId, address indexed client, uint256 reward, TaskType taskType, string descHash);
     event TaskAccepted(uint256 indexed taskId, address indexed agent);
     event TaskSubmitted(uint256 indexed taskId, address indexed agent, string resultHash);
     event TaskVerified(uint256 indexed taskId, address indexed agent, uint256 payout);
@@ -68,7 +71,7 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
         genesisLobster = GenesisLobster(genesisLobster_);
     }
 
-    function postTask(uint256 reward, uint256 deadline, string calldata descHash)
+    function postTask(uint256 reward, uint256 deadline, string calldata descHash, TaskType taskType)
         external
         whenNotPaused
         nonReentrant
@@ -87,11 +90,12 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
             postedAt: block.timestamp,
             deadline: deadline,
             status: TaskStatus.Pending,
+            taskType: taskType,
             descriptionHash: descHash,
             resultHash: ""
         });
 
-        emit TaskPosted(taskId, msg.sender, reward, descHash);
+        emit TaskPosted(taskId, msg.sender, reward, taskType, descHash);
     }
 
     function acceptTask(uint256 taskId) external whenNotPaused nonReentrant {
@@ -189,6 +193,7 @@ contract TaskMarket is AccessControl, Pausable, ReentrancyGuard {
             try genesisLobster.safeMint(task.assignee, taskId) {} catch {}
         }
 
+        verifiedTaskCount++;
         emit TaskVerified(taskId, task.assignee, toContributor);
     }
 
