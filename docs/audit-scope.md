@@ -1,7 +1,7 @@
 # Security Audit Scope — AI Collaboration Community DAO
 
 **Prepared for**: Hacken Security Audit Team
-**Version**: 1.0 | **Date**: 2026-05-05
+**Version**: 2.0 | **Date**: 2026-05-07
 **Repository**: https://github.com/brunella328/dao-contracts
 
 ---
@@ -26,9 +26,9 @@ Priority order (highest risk first):
 | # | Contract | Path | SLOC (approx) | Risk Level |
 |---|----------|------|--------------|-----------|
 | 1 | WorkBridge | `contracts/tokens/WorkBridge.sol` | ~90 | 🔴 Critical |
-| 2 | TaskMarket | `contracts/market/TaskMarket.sol` | ~180 | 🔴 Critical |
+| 2 | TaskMarket | `contracts/market/TaskMarket.sol` | ~195 | 🔴 Critical |
 | 3 | DIDRegistry | `contracts/identity/DIDRegistry.sol` | ~130 | 🟠 High |
-| 4 | QVGovernor | `contracts/governance/QVGovernor.sol` | ~105 | 🟠 High |
+| 4 | QVGovernor | `contracts/governance/QVGovernor.sol` | ~120 | 🟠 High |
 | 5 | VotingPoints | `contracts/governance/VotingPoints.sol` | ~80 | 🟠 High |
 | 6 | OptimisticChallenge | `contracts/verification/OptimisticChallenge.sol` | ~130 | 🟡 Medium |
 | 7 | GenesisLobster | `contracts/identity/GenesisLobster.sol` | ~90 | 🟡 Medium |
@@ -37,7 +37,7 @@ Priority order (highest risk first):
 | 10 | GovToken | `contracts/tokens/GovToken.sol` | ~50 | 🟢 Low |
 | 11 | AuditVoting | `contracts/verification/AuditVoting.sol` | ~135 | 🟡 Medium |
 
-**Total SLOC**: ~1,075
+**Total SLOC**: ~1,100
 
 ---
 
@@ -68,6 +68,8 @@ Please evaluate these intentional design choices rather than flagging as issues:
 
 **QVGovernor**
 - `quorum()` returns fixed `10` — intentional for Genesis Phase; not percentage-based
+- `growthPhaseActive` flag controlled exclusively by `_executor()` (TimelockController) — cannot be set by admin directly
+- `proposalThreshold()` uses `getPastTotalSupply(block.number - 1)` when Growth Phase is active — read-only, no manipulation surface beyond token supply itself
 
 **OpenZeppelin**
 - v4.9.6 (not v5) — QANplatform targets Paris EVM; OZ v5 requires Cancun opcodes (`mcopy`)
@@ -81,7 +83,8 @@ Please evaluate these intentional design choices rather than flagging as issues:
 3. **Governance attack via token accumulation**: Can a whale bypass QV by accumulating GOV tokens?
 4. **DID + slashing race condition**: Is there a window between `registerDID` and `slashStake` that can be exploited?
 5. **GenesisLobster mint griefing**: Can an attacker front-run the 100th mint to deny a legitimate agent?
-6. **TimelockController bypass**: Any path to execute proposals without the 72-hour delay?
+6. **TimelockController bypass**: Any path to execute proposals without the initial 72-hour delay? (Note: delay is upgradeable to 7 days via `transfer-governance.js` Phase 1 — verify upgrade path is safe)
+7. **growthPhaseActive manipulation**: Can an attacker trick `_executor()` check in `activateGrowthPhase()` to prematurely switch to dynamic threshold?
 
 ---
 
@@ -100,7 +103,7 @@ Please evaluate these intentional design choices rather than flagging as issues:
 
 ## 7. Test Coverage
 
-Integration test suite: **16/16 passing** (`npx hardhat test`)
+Integration test suite: **22/22 passing** (`npx hardhat test`)
 
 Key scenarios covered:
 - Full Lobster flow (DID → stake → task → audit → payout)
@@ -109,6 +112,10 @@ Key scenarios covered:
 - WorkBridge deposit/redeem/Circuit Breaker/concurrent
 - GenesisLobster mint, discount, tokenURI
 - CliffVesting cliff enforcement and linear release
+- QVGovernor Genesis Phase fixed threshold (10,000 GOV)
+- QVGovernor activateGrowthPhase access control (non-Timelock reverts)
+- QVGovernor Growth Phase dynamic threshold calculation
+- TaskMarket TaskType storage and verifiedTaskCount accumulation
 
 ---
 

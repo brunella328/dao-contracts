@@ -1,6 +1,6 @@
 # Pre-Audit Self-Check Checklist
 
-Version: 1.0 | Prepared for: Hacken Security Audit
+Version: 2.0 | Prepared for: Hacken Security Audit | Updated: 2026-05-07
 
 Run this checklist before submitting contracts for third-party audit to reduce scope ambiguity and save audit hours.
 
@@ -31,6 +31,7 @@ Run this checklist before submitting contracts for third-party audit to reduce s
 | WorkBridge | `setRedeemPaused()` | PAUSER_ROLE | ☐ |
 | WorkBridge | `withdrawUSDC()` | DEFAULT_ADMIN_ROLE | ☐ |
 | GenesisLobster | `safeMint()` | MINTER_ROLE | ☐ |
+| QVGovernor | `activateGrowthPhase()` | `_executor()` (TimelockController only) | ☐ |
 
 ---
 
@@ -89,6 +90,7 @@ Run this checklist before submitting contracts for third-party audit to reduce s
 - [ ] `WorkBridge.redeem(0)` → reverts with "Amount must be positive"
 - [ ] `TaskMarket.postTask(reward=0)` → reverts
 - [ ] `DIDRegistry.registerDID(stakeAmount < MIN_STAKE)` → reverts
+- [ ] `QVGovernor.proposalThreshold()` when `totalSupply = 0` and Growth Phase active → returns base 10,000e18
 
 ### Timestamp / Deadline Edge Cases
 - [ ] `TaskMarket.postTask(deadline = block.timestamp)` → reverts (must be future)
@@ -110,3 +112,6 @@ Run this checklist before submitting contracts for third-party audit to reduce s
 4. **OpenZeppelin v4.9.6** (not v5) — Paris EVM target; v5 requires Cancun opcodes incompatible with QANplatform
 5. **AuditVoting._selectAuditors** uses `blockhash(block.number - 1)` — acceptable for Genesis Phase; upgrade to VRF planned for MainNet
 6. **WorkBridge.withdrawUSDC** is admin-only — intended for yield deployment and emergency scenarios; creates reserve risk if misused
+7. **QVGovernor.activateGrowthPhase** is one-way and irreversible — by design; Growth Phase cannot be deactivated once started
+8. **TaskMarket.TaskType** enum is for categorization only in M4 — all task types use identical audit logic (3/5 quorum); differentiated quorum planned for M5
+9. **TimelockController delay** starts at 72h (Genesis Phase); `transfer-governance.js` Phase 1 upgrades to 7 days via `updateDelay(604800)` — this call itself must go through Timelock
