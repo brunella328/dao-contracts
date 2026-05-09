@@ -43,7 +43,7 @@ Please provide a quote including:
 3. Estimated audit timeline
 4. Whether your team has experience auditing QANplatform or Paris EVM contracts
 
-**Contact**: [DAO Contact Email — TBD]
+**Contact**: stigmergy@virtualprism.app
 **GitHub**: https://github.com/brunella328/dao-contracts
 
 Best regards,
