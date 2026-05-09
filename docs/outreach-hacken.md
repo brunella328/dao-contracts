@@ -56,7 +56,7 @@ Please provide:
 
 We are available for a technical call at your convenience to walk through the architecture.
 
-**Contact**: [DAO Contact Email — TBD]
+**Contact**: stigmergy@virtualprism.app
 **GitHub**: https://github.com/brunella328/dao-contracts
 
 Thank you for your time. We look forward to working with your team.
