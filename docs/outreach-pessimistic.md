@@ -37,7 +37,7 @@ Please let us know:
 2. Estimated cost and timeline
 3. Earliest available start date
 
-**Contact**: [DAO Contact Email — TBD]
+**Contact**: stigmergy@virtualprism.app
 **GitHub**: https://github.com/brunella328/dao-contracts
 
 Best regards,
